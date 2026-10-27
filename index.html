@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>平面圖形面積總結與重溫大對決</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Canvas Confetti for Celebrations -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@700&family=Noto+Sans+TC:wght@600;800;900&display=swap');
+        
+        html, body {
+            width: 100%;
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: #fce8c5;
+            background-image: 
+                radial-gradient(#f7a072 15%, transparent 16%),
+                radial-gradient(#f7a072 15%, transparent 16%);
+            background-size: 60px 60px;
+            background-position: 0 0, 30px 30px;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: manipulation;
+        }
+
+        .mario-card {
+            background: #fff8e7;
+            border: 4px solid #4a2810;
+            box-shadow: 4px 4px 0px #4a2810;
+            border-radius: 16px;
+        }
+
+        .mario-btn {
+            background: #ff595e;
+            color: white;
+            border: 3px solid #4a2810;
+            box-shadow: 0 4px 0 #4a2810;
+            border-radius: 12px;
+            font-weight: 900;
+            transition: all 0.1s ease;
+        }
+        .mario-btn:active {
+            transform: translateY(3px);
+            box-shadow: 0 1px 0 #4a2810;
+        }
+
+        .mario-btn-yellow {
+            background: #ffca3a;
+            color: #4a2810;
+            border: 3px solid #4a2810;
+            box-shadow: 0 4px 0 #4a2810;
+        }
+
+        .mario-btn-green {
+            background: #8ac926;
+            color: white;
+            border: 3px solid #4a2810;
+            box-shadow: 0 4px 0 #4a2810;
+        }
+
+        .mario-btn-blue {
+            background: #1976d2;
+            color: white;
+            border: 3px solid #4a2810;
+            box-shadow: 0 4px 0 #4a2810;
+        }
+
+        .mario-btn-reject {
+            background: #e63946;
+            color: white;
+            border: 3px solid #4a2810;
+            box-shadow: 0 3px 0 #4a2810;
+        }
+
+        .drag-item {
+            cursor: grab;
+            user-select: none;
+            touch-action: none;
+        }
+        .drag-item:active {
+            cursor: grabbing;
+        }
+
+        .drop-zone {
+            transition: all 0.2s ease;
+        }
+        .drop-zone.drag-over {
+            background-color: #fef08a !important;
+            border-color: #ca8a04 !important;
+        }
+
+        canvas {
+            touch-action: none;
+        }
+    </style>
+</head>
+<body class="p-2 sm:p-4 text-gray-800 min-h-screen">
+
+    <!-- Top Header & View Switcher -->
+    <header class="mario-card p-3 mb-4 flex flex-col md:flex-row justify-between items-center bg-amber-100 gap-3">
+        <div class="flex items-center gap-2">
+            <div class="bg-red-500 border-2 border-black p-1.5 rounded-xl text-xl shadow">🍄</div>
+            <h1 class="text-xl md:text-2xl font-black text-red-600 tracking-wide">常見平面圖形面積總結與重溫 🌟</h1>
+        </div>
+
+        <!-- Mode Selector Switcher -->
+        <div class="flex flex-wrap items-center justify-center gap-1.5 bg-amber-200 p-2 rounded-2xl border-2 border-amber-800 w-full md:w-auto">
+            <span class="font-black text-amber-900 text-xs px-1">視角切換：</span>
+            <button onclick="switchView('whiteboard')" id="btn-view-wb" class="mario-btn mario-btn-yellow px-2.5 py-1 text-xs">🖥️ 白板總覽</button>
+            <div class="h-4 w-[2px] bg-amber-800/40 mx-1"></div>
+            <!-- Student Navigation Buttons -->
+            <div id="student-nav-buttons" class="flex flex-wrap gap-1 max-w-xl"></div>
+        </div>
+    </header>
+
+    <!-- ================= VIEW 1: WHITEBOARD MAIN DASHBOARD ================= -->
+    <main id="view-whiteboard" class="space-y-4">
+        <!-- Control Banner & Comparison Modal Trigger -->
+        <div class="mario-card p-3 bg-yellow-100 flex flex-col sm:flex-row justify-between items-center gap-3">
+            <div class="flex items-center gap-2">
+                <span class="text-2xl">👑</span>
+                <div>
+                    <h2 class="font-black text-amber-900 text-sm md:text-base">全班 13 位學生即時提交總覽</h2>
+                    <p class="text-xs text-amber-800 font-bold">初組（9人：拖拉配對） ｜ 高組（4人：全手寫畫布）</p>
+                </div>
+            </div>
+            <button onclick="openCompareModal()" class="mario-btn mario-btn-blue px-4 py-2 text-xs font-black flex items-center gap-1.5">
+                <span>🔍 逐位學生比較表格答案</span>
+            </button>
+        </div>
+
+        <!-- 13 Student AirPlay Cards Grid -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+            <div id="student-cards-grid" class="contents"></div>
+        </div>
+    </main>
+
+    <!-- ================= VIEW 2: STUDENT PRACTICE WORKSPACE ================= -->
+    <main id="view-student" class="hidden space-y-4">
+        <!-- Student Header -->
+        <div class="mario-card p-3 bg-orange-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-2">
+            <div>
+                <div class="flex items-center gap-2">
+                    <span id="student-badge" class="bg-red-500 text-white font-black px-2.5 py-0.5 rounded-lg text-xs border border-black">📱 學生作答面板</span>
+                    <span id="tier-badge" class="bg-amber-400 text-amber-950 font-black px-2 py-0.5 rounded-md text-[11px] border border-black">初組範本</span>
+                </div>
+                <h2 class="text-base md:text-lg font-black text-amber-900 mt-1">請完成平面圖形面積重溫表格</h2>
+            </div>
+            <button onclick="submitStudentWork()" class="mario-btn mario-btn-green px-4 py-2 text-sm font-black flex items-center gap-1.5 self-end md:self-auto">
+                <span>🚀 提交並 AirPlay 投射</span>
+            </button>
+        </div>
+
+        <!-- Work Area Container -->
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-3">
+            <!-- Left Tool Palette -->
+            <div id="palette-panel" class="mario-card p-3 space-y-3 bg-yellow-50 lg:col-span-1 flex flex-col justify-between">
+            </div>
+
+            <!-- Right Main Table Sheet -->
+            <div class="mario-card p-2 md:p-4 bg-white lg:col-span-3 overflow-x-auto">
+                <table class="w-full border-collapse border-4 border-amber-900 text-center text-xs md:text-sm">
+                    <thead>
+                        <tr class="bg-amber-200 text-amber-900 font-black text-sm md:text-base border-b-4 border-amber-900">
+                            <th class="p-2 border-r-2 border-amber-900 w-1/4">圖形名稱</th>
+                            <th class="p-2 border-r-2 border-amber-900 w-2/5">面積的範圍</th>
+                            <th class="p-2 w-1/3">計算公式</th>
+                        </tr>
+                    </thead>
+                    <tbody id="student-table-body">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal: Side-by-Side Comparison Modal -->
+    <div id="compare-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-3">
+        <div class="mario-card bg-amber-50 w-full max-w-5xl max-h-[90vh] flex flex-col p-4 space-y-4">
+            <div class="flex justify-between items-center border-b-2 border-amber-800 pb-2">
+                <h3 class="font-black text-amber-900 text-lg flex items-center gap-2">
+                    <span>🔍 學生作答對比與檢視</span>
+                </h3>
+                <button onclick="closeCompareModal()" class="mario-btn-reject px-3 py-1 text-xs font-black rounded-lg">✕ 關閉</button>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3 bg-amber-200 p-2 rounded-xl border border-amber-800">
+                <div class="flex items-center gap-2">
+                    <span class="font-black text-xs text-amber-900">比較對象 A：</span>
+                    <select id="compare-select-a" onchange="renderComparison()" class="bg-white border-2 border-black rounded-lg p-1 text-xs font-bold w-full">
+                    </select>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="font-black text-xs text-amber-900">比較對象 B：</span>
+                    <select id="compare-select-b" onchange="renderComparison()" class="bg-white border-2 border-black rounded-lg p-1 text-xs font-bold w-full">
+                    </select>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 overflow-y-auto p-1 flex-1">
+                <div id="compare-card-a" class="mario-card p-3 bg-white"></div>
+                <div id="compare-card-b" class="mario-card p-3 bg-white"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const TOTAL_STUDENTS = 13;
+
+        const studentList = [
+            { id: 1, name: '梁賢喆', tier: 'basic' },
+            { id: 2, name: '胡惟凱', tier: 'basic' },
+            { id: 3, name: '梁詠珊', tier: 'basic' },
+            { id: 4, name: '周素心', tier: 'basic' },
+            { id: 5, name: '阮惠詩', tier: 'basic' },
+            { id: 6, name: '黃澤豐', tier: 'basic' },
+            { id: 7, name: '陳鈞耀', tier: 'basic' },
+            { id: 8, name: '張柏禧', tier: 'basic' },
+            { id: 9, name: '黃永楠', tier: 'basic' },
+            { id: 10, name: '廖子棋', tier: 'advanced' },
+            { id: 11, name: '詹天佑', tier: 'advanced' },
+            { id: 12, name: '陳家銘', tier: 'advanced' },
+            { id: 13, name: 'Clemente Joaquin', tier: 'advanced' }
+        ];
+
+        const shapes = [
+            { id: 'square', name: '正方形', formula: '邊長 x 邊長' },
+            { id: 'rectangle', name: '長方形', formula: '長 x 闊' },
+            { id: 'parallelogram', name: '平行四邊形', formula: '底 x 高' },
+            { id: 'triangle', name: '三角形', formula: '底 x 高 ÷ 2' },
+            { id: 'trapezoid', name: '梯形', formula: '(上底 + 下底) x 高 ÷ 2' }
+        ];
+
+        const shapeSvgMap = {
+            square: `<svg class="w-16 h-16 mx-auto" viewBox="0 0 100 100"><rect x="15" y="15" width="70" height="70" fill="#f87171" stroke="#4a2810" stroke-width="4"/><path d="M15 15 L85 15 L85 85 L15 85 Z" fill="#fca5a5" opacity="0.6"/></svg>`,
+            rectangle: `<svg class="w-20 h-14 mx-auto" viewBox="0 0 120 80"><rect x="10" y="15" width="100" height="50" fill="#60a5fa" stroke="#4a2810" stroke-width="4"/><rect x="10" y="15" width="100" height="50" fill="#93c5fd" opacity="0.6"/></svg>`,
+            parallelogram: `<svg class="w-20 h-14 mx-auto" viewBox="0 0 120 80"><polygon points="30,15 110,15 90,65 10,65" fill="#fbbf24" stroke="#4a2810" stroke-width="4"/><polygon points="30,15 110,15 90,65 10,65" fill="#fde047" opacity="0.6"/></svg>`,
+            triangle: `<svg class="w-16 h-16 mx-auto" viewBox="0 0 100 100"><polygon points="50,15 85,80 15,80" fill="#4ade80" stroke="#4a2810" stroke-width="4"/><polygon points="50,15 85,80 15,80" fill="#86efac" opacity="0.6"/></svg>`,
+            trapezoid: `<svg class="w-20 h-14 mx-auto" viewBox="0 0 120 80"><polygon points="35,15 85,15 105,65 15,65" fill="#c084fc" stroke="#4a2810" stroke-width="4"/><polygon points="35,15 85,15 105,65 15,65" fill="#d8b4fe" opacity="0.6"/></svg>`
+        };
+
+        const studentAnswers = {};
+        studentList.forEach(s => {
+            studentAnswers[s.id] = {
+                submitted: false,
+                rangeAnswers: {}, 
+                formulaAnswers: {} 
+            };
+        });
+
+        let currentView = 'whiteboard';
+        let currentStudent = 1;
+        let activeColor = '#e63946';
+
+        function playSound(type) {
+            try {
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+
+                if (type === 'submit') {
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(523.25, audioCtx.currentTime);
+                    osc.frequency.setValueAtTime(659.25, audioCtx.currentTime + 0.1);
+                    osc.frequency.setValueAtTime(783.99, audioCtx.currentTime + 0.2);
+                    gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 0.4);
+                }
+            } catch(e) {}
+        }
+
+        window.onload = () => {
+            buildNavigation();
+            buildWhiteboardGrid();
+            populateCompareDropdowns();
+            switchView('whiteboard');
+        };
+
+        function buildNavigation() {
+            const nav = document.getElementById('student-nav-buttons');
+            nav.innerHTML = '';
+            studentList.forEach(s => {
+                const isBasic = s.tier === 'basic';
+                const btn = document.createElement('button');
+                btn.id = `nav-btn-s${s.id}`;
+                btn.className = `mario-btn text-xs px-2 py-1 rounded-lg ${isBasic ? 'mario-btn-yellow' : 'mario-btn-blue'}`;
+                btn.innerHTML = s.name;
+                btn.onclick = () => switchView('student', s.id);
+                nav.appendChild(btn);
+            });
+        }
+
+        function buildWhiteboardGrid() {
+            const grid = document.getElementById('student-cards-grid');
+            grid.innerHTML = '';
+            studentList.forEach(s => {
+                const isBasic = s.tier === 'basic';
+                const card = document.createElement('div');
+                card.className = "mario-card p-2.5 relative flex flex-col justify-between bg-amber-50/90";
+                card.id = `wb-card-s${s.id}`;
+                
+                card.innerHTML = `
+                    <div class="flex justify-between items-center mb-1.5">
+                        <span class="font-black px-2 py-0.5 rounded-lg text-xs border border-black text-white ${isBasic ? 'bg-amber-600' : 'bg-blue-600'}">
+                            ${s.name}
+                        </span>
+                        <span id="wb-status-s${s.id}" class="text-[10px] font-black bg-gray-200 text-gray-700 px-1.5 py-0.5 rounded border">⏳ 未提交</span>
+                    </div>
+                    <div id="wb-preview-s${s.id}" class="bg-white rounded-xl p-2 border-2 border-amber-200 aspect-[4/3] flex items-center justify-center text-center text-amber-800/50 font-bold text-xs overflow-hidden">
+                        📱 等待 ${s.name} 提交解答...
+                    </div>
+                    <button onclick="switchView('student', ${s.id})" class="mario-btn mario-btn-yellow text-[10px] w-full mt-2 py-1 font-black">
+                        ✏️ 進入 ${s.name} 視角作答
+                    </button>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        function switchView(mode, studentId = 1) {
+            currentView = mode;
+            currentStudent = studentId;
+
+            document.getElementById('view-whiteboard').classList.add('hidden');
+            document.getElementById('view-student').classList.add('hidden');
+
+            if (mode === 'whiteboard') {
+                document.getElementById('view-whiteboard').classList.remove('hidden');
+            } else {
+                document.getElementById('view-student').classList.remove('hidden');
+                const sObj = studentList.find(s => s.id === studentId);
+                const isBasic = sObj.tier === 'basic';
+                
+                document.getElementById('student-badge').innerText = `📱 學生：${sObj.name}`;
+                document.getElementById('student-badge').className = `font-black px-2.5 py-0.5 rounded-lg text-xs border border-black text-white ${isBasic ? 'bg-amber-600' : 'bg-blue-600'}`;
+                document.getElementById('tier-badge').innerText = isBasic ? '初組範本（圖案配對與公式拖拉）' : '高組範本（全手寫畫布）';
+
+                renderStudentWorkspace(studentId);
+            }
+        }
+
+        function renderStudentWorkspace(studentId) {
+            const sObj = studentList.find(s => s.id === studentId);
+            const isBasic = sObj.tier === 'basic';
+            const palette = document.getElementById('palette-panel');
+            const tbody = document.getElementById('student-table-body');
+
+            if (isBasic) {
+                palette.innerHTML = `
+                    <div>
+                        <h3 class="font-black text-amber-900 text-xs mb-2 border-b-2 border-amber-800 pb-1">🧩 拖拉工具箱 (初組)</h3>
+                        <p class="text-[11px] font-bold text-amber-800 mb-2">請將圖案與公式拖拉至右側表格：</p>
+                        
+                        <div class="space-y-2">
+                            <div class="font-black text-xs text-amber-900">1. 圖形圖案：</div>
+                            <div class="grid grid-cols-3 gap-1" id="shape-drag-items">
+                                ${shapes.map(s => `
+                                    <div draggable="true" ondragstart="handleDragStart(event, 'shape', '${s.id}')" class="drag-item p-1 bg-white border-2 border-amber-800 rounded-lg text-center shadow-sm hover:bg-amber-100">
+                                        ${shapeSvgMap[s.id]}
+                                    </div>
+                                `).join('')}
+                            </div>
+
+                            <div class="font-black text-xs text-amber-900 mt-3">2. 計算公式：</div>
+                            <div class="space-y-1.5" id="formula-drag-items">
+                                ${shapes.map(s => `
+                                    <div draggable="true" ondragstart="handleDragStart(event, 'formula', '${s.formula}')" class="drag-item p-1.5 bg-amber-200 border-2 border-amber-900 rounded-lg text-center font-black text-xs shadow-sm hover:bg-amber-300">
+                                        ${s.formula}
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            } else {
+                palette.innerHTML = `
+                    <div>
+                        <h3 class="font-black text-amber-900 text-xs mb-2 border-b-2 border-amber-800 pb-1">🎨 手寫工具箱 (高組)</h3>
+                        
+                        <div class="mb-3">
+                            <label class="block font-black text-[11px] text-amber-900 mb-1">畫筆顏色：</label>
+                            <div class="flex gap-2">
+                                <button onclick="setPenColor('#e63946')" class="w-8 h-8 rounded-full bg-red-500 border-2 border-black shadow hover:scale-105 active:scale-95 transition-transform"></button>
+                                <button onclick="setPenColor('#1d3557')" class="w-8 h-8 rounded-full bg-blue-900 border-2 border-black shadow hover:scale-105 active:scale-95 transition-transform"></button>
+                                <button onclick="setPenColor('#2a9d8f')" class="w-8 h-8 rounded-full bg-teal-600 border-2 border-black shadow hover:scale-105 active:scale-95 transition-transform"></button>
+                                <button onclick="setPenColor('#fbbf24')" class="w-8 h-8 rounded-full bg-yellow-400 border-2 border-black shadow hover:scale-105 active:scale-95 transition-transform"></button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            tbody.innerHTML = shapes.map(s => {
+                const answerRange = studentAnswers[studentId].rangeAnswers[s.id];
+                const answerFormula = studentAnswers[studentId].formulaAnswers[s.id] || '';
+
+                return `
+                    <tr class="border-b-2 border-amber-900">
+                        <!-- Column 1: Shape Name -->
+                        <td class="p-2 font-black text-amber-900 border-r-2 border-amber-900 bg-amber-50/50">
+                            ${s.name}
+                        </td>
+
+                        <!-- Column 2: Area Range -->
+                        <td class="p-2 border-r-2 border-amber-900 bg-amber-50/20">
+                            ${isBasic ? `
+                                <div id="drop-range-${s.id}" 
+                                     ondragover="handleDragOver(event)" 
+                                     ondragleave="handleDragLeave(event)" 
+                                     ondrop="handleDropRange(event, '${s.id}')" 
+                                     class="drop-zone border-2 border-dashed border-amber-400 min-h-[70px] rounded-xl flex items-center justify-center p-1 bg-white">
+                                     ${answerRange ? shapeSvgMap[answerRange] : '<span class="text-xs text-gray-400 font-bold">請拖拉圖案至此</span>'}
+                                </div>
+                            ` : `
+                                <div class="flex flex-col items-center gap-1">
+                                    <canvas id="canvas-range-${s.id}" width="160" height="90" class="border-2 border-amber-800 rounded-lg bg-amber-50 cursor-crosshair"></canvas>
+                                    <button onclick="clearSingleCanvas('range', '${s.id}')" class="text-[10px] bg-gray-200 border border-black rounded px-1.5 py-0.5 font-bold">🧹 清除</button>
+                                </div>
+                            `}
+                        </td>
+
+                        <!-- Column 3: Formula -->
+                        <td class="p-2 bg-amber-50/20">
+                            ${isBasic ? `
+                                <div id="drop-formula-${s.id}" 
+                                     ondragover="handleDragOver(event)" 
+                                     ondragleave="handleDragLeave(event)" 
+                                     ondrop="handleDropFormula(event, '${s.id}')" 
+                                     class="drop-zone border-2 border-dashed border-amber-400 min-h-[50px] rounded-xl flex items-center justify-center p-1.5 bg-white font-black text-xs text-amber-900">
+                                     ${answerFormula || '<span class="text-xs text-gray-400 font-bold">拖拉公式至此</span>'}
+                                </div>
+                            ` : `
+                                <div class="flex flex-col items-center gap-1">
+                                    <canvas id="canvas-formula-${s.id}" width="160" height="90" class="border-2 border-amber-800 rounded-lg bg-amber-50 cursor-crosshair"></canvas>
+                                    <button onclick="clearSingleCanvas('formula', '${s.id}')" class="text-[10px] bg-gray-200 border border-black rounded px-1.5 py-0.5 font-bold">🧹 清除</button>
+                                </div>
+                            `}
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+
+            if (!isBasic) {
+                setTimeout(() => {
+                    shapes.forEach(s => {
+                        initCanvas('range', s.id);
+                        initCanvas('formula', s.id);
+                    });
+                }, 50);
+            }
+        }
+
+        let currentDrag = null;
+
+        function handleDragStart(e, type, value) {
+            currentDrag = { type, value };
+            e.dataTransfer.setData('text/plain', value);
+        }
+
+        function handleDragOver(e) {
+            e.preventDefault();
+            e.currentTarget.classList.add('drag-over');
+        }
+
+        function handleDragLeave(e) {
+            e.currentTarget.classList.remove('drag-over');
+        }
+
+        function handleDropRange(e, shapeId) {
+            e.preventDefault();
+            e.currentTarget.classList.remove('drag-over');
+            if (currentDrag && currentDrag.type === 'shape') {
+                studentAnswers[currentStudent].rangeAnswers[shapeId] = currentDrag.value;
+                renderStudentWorkspace(currentStudent);
+            }
+        }
+
+        function handleDropFormula(e, shapeId) {
+            e.preventDefault();
+            e.currentTarget.classList.remove('drag-over');
+            if (currentDrag && currentDrag.type === 'formula') {
+                studentAnswers[currentStudent].formulaAnswers[shapeId] = currentDrag.value;
+                renderStudentWorkspace(currentStudent);
+            }
+        }
+
+        function initCanvas(type, shapeId) {
+            const canvas = document.getElementById(`canvas-${type}-${shapeId}`);
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+
+            const targetStore = type === 'range' ? studentAnswers[currentStudent].rangeAnswers : studentAnswers[currentStudent].formulaAnswers;
+
+            if (targetStore[shapeId]) {
+                const img = new Image();
+                img.onload = () => ctx.drawImage(img, 0, 0);
+                img.src = targetStore[shapeId];
+            }
+
+            let drawing = false;
+            let lastX = 0, lastY = 0;
+
+            function getPos(e) {
+                const rect = canvas.getBoundingClientRect();
+                let clientX = e.clientX, clientY = e.clientY;
+                if (e.touches && e.touches.length > 0) {
+                    clientX = e.touches[0].clientX;
+                    clientY = e.touches[0].clientY;
+                }
+                return { x: clientX - rect.left, y: clientY - rect.top };
+            }
+
+            function start(e) {
+                drawing = true;
+                const p = getPos(e);
+                lastX = p.x; lastY = p.y;
+            }
+
+            function draw(e) {
+                if (!drawing) return;
+                e.preventDefault();
+                const p = getPos(e);
+                ctx.beginPath();
+                ctx.moveTo(lastX, lastY);
+                ctx.lineTo(p.x, p.y);
+                ctx.strokeStyle = activeColor;
+                ctx.lineWidth = 4;
+                ctx.lineCap = 'round';
+                ctx.stroke();
+                lastX = p.x; lastY = p.y;
+            }
+
+            function stop() {
+                if (drawing) {
+                    drawing = false;
+                    targetStore[shapeId] = canvas.toDataURL();
+                }
+            }
+
+            canvas.addEventListener('mousedown', start);
+            canvas.addEventListener('mousemove', draw);
+            canvas.addEventListener('mouseup', stop);
+            canvas.addEventListener('mouseleave', stop);
+
+            canvas.addEventListener('touchstart', start, { passive: false });
+            canvas.addEventListener('touchmove', draw, { passive: false });
+            canvas.addEventListener('touchend', stop);
+        }
+
+        function clearSingleCanvas(type, shapeId) {
+            const canvas = document.getElementById(`canvas-${type}-${shapeId}`);
+            if (canvas) {
+                const ctx = canvas.getContext('2d');
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                if (type === 'range') delete studentAnswers[currentStudent].rangeAnswers[shapeId];
+                else delete studentAnswers[currentStudent].formulaAnswers[shapeId];
+            }
+        }
+
+        function setPenColor(color) {
+            activeColor = color;
+        }
+
+        function submitStudentWork() {
+            studentAnswers[currentStudent].submitted = true;
+            const sObj = studentList.find(s => s.id === currentStudent);
+            
+            const preview = document.getElementById(`wb-preview-s${currentStudent}`);
+            const status = document.getElementById(`wb-status-s${currentStudent}`);
+            
+            status.innerText = '✅ 已 AirPlay 投射';
+            status.className = 'text-[10px] font-black bg-green-500 text-white px-1.5 py-0.5 rounded border';
+
+            const isBasic = sObj.tier === 'basic';
+
+            preview.innerHTML = `
+                <div class="w-full text-left font-bold text-[10px] space-y-1">
+                    ${shapes.map(s => `
+                        <div class="flex justify-between border-b pb-0.5 items-center">
+                            <span>${s.name}:</span>
+                            <span class="text-amber-900 font-black">
+                                ${isBasic ? (studentAnswers[currentStudent].formulaAnswers[s.id] || '未填') 
+                                          : (studentAnswers[currentStudent].formulaAnswers[s.id] ? '已手寫' : '未手寫')}
+                            </span>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+
+            playSound('submit');
+            confetti({ particleCount: 40, spread: 50 });
+            alert(`🎉 學生 ${sObj.name} 的平面圖形重溫表格已成功 AirPlay 投射至電子白板！`);
+        }
+
+        function populateCompareDropdowns() {
+            const selA = document.getElementById('compare-select-a');
+            const selB = document.getElementById('compare-select-b');
+            
+            let options = '';
+            studentList.forEach(s => {
+                options += `<option value="${s.id}">${s.name}</option>`;
+            });
+            selA.innerHTML = options;
+            selB.innerHTML = options;
+            selB.value = "2";
+        }
+
+        function openCompareModal() {
+            document.getElementById('compare-modal').classList.remove('hidden');
+            renderComparison();
+        }
+
+        function closeCompareModal() {
+            document.getElementById('compare-modal').classList.add('hidden');
+        }
+
+        function renderComparison() {
+            const idA = document.getElementById('compare-select-a').value;
+            const idB = document.getElementById('compare-select-b').value;
+
+            document.getElementById('compare-card-a').innerHTML = generateStudentSummaryHTML(idA);
+            document.getElementById('compare-card-b').innerHTML = generateStudentSummaryHTML(idB);
+        }
+
+        function generateStudentSummaryHTML(id) {
+            const data = studentAnswers[id];
+            const sObj = studentList.find(s => s.id == id);
+            const isBasic = sObj.tier === 'basic';
+
+            return `
+                <div class="space-y-2">
+                    <div class="flex justify-between items-center bg-amber-100 p-2 rounded-lg border border-amber-800">
+                        <span class="font-black text-sm text-amber-900">${sObj.name}</span>
+                        <span class="text-xs font-bold ${data.submitted ? 'text-green-700' : 'text-gray-500'}">
+                            ${data.submitted ? '✅ 已提交' : '⏳ 未提交'}
+                        </span>
+                    </div>
+
+                    <table class="w-full text-center text-xs border-collapse border border-amber-800">
+                        <thead>
+                            <tr class="bg-amber-200 text-amber-900 font-bold">
+                                <th class="border p-1">圖形</th>
+                                <th class="border p-1">範圍</th>
+                                <th class="border p-1">公式</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${shapes.map(s => `
+                                <tr>
+                                    <td class="border p-1 font-bold">${s.name}</td>
+                                    <td class="border p-1">
+                                        ${isBasic ? (data.rangeAnswers[s.id] ? shapeSvgMap[data.rangeAnswers[s.id]] : '未對配') 
+                                                  : (data.rangeAnswers[s.id] ? `<img src="${data.rangeAnswers[s.id]}" class="h-8 mx-auto"/>` : '未繪畫')}
+                                    </td>
+                                    <td class="border p-1">
+                                        ${isBasic ? `<span class="font-black text-amber-900">${data.formulaAnswers[s.id] || '未選擇'}</span>`
+                                                  : (data.formulaAnswers[s.id] ? `<img src="${data.formulaAnswers[s.id]}" class="h-8 mx-auto"/>` : '未手寫')}
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+    </script>
+</body>
+</html>
